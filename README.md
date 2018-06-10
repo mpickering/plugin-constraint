@@ -1,32 +1,26 @@
-`hashtag-coerce` is a GHC source plugin which detects opportunities to use coerce.
+`plugin-constraint` is a GHC source plugin which demonstates two common taks
+which need to be achieved when writing a source plugin.
 
-At the moment it just detects one simple example, where we are mapping a newtype
-constructor over a list. Operationally, this will traverse the list and apply
-the newtype constructor at each position.
+1. How to interact with the constraint solver.
+2. How to generate `HsExpr GhcTc`.
 
-For example,
+Both of these are not obvious!
 
-
-```
-newtype Baz = Baz Int
-
-qux :: [Int] -> [Baz]
-qux = map Baz
-```
-
-will cause the plugin to warn that the `map Foo` can be replaced with `coerce`.
-
+All the plugin actually does is insert a single new binding.
 
 ```
-src/ModuleA.hs:6:7: warning:
-    The usage of 'map' can be replaced with coerce.
-  |
-6 | qux = map Baz
-  |       ^^^^^^^
+myBinding = print ()
 ```
 
-The plugin can only be used with GHC 8.6.1 which is scheduled to be released at
-the end of June.
+In order to do this, we first find the `Show` instance for `()`. This is done
+by the `generateDictionry` function which returns the variable which the dictionary
+will be bound to and the dictionary itself.
 
-In order to run the plugin, add `hashtag-coerce` as a dependency and
-compiler with `-fplugin=HashtagCoerce`.
+We then demonstrate in `mkNewBinding` how to *directly* use this dictionary by using it to create
+the new binding. A type checked term uses `HsWrap` constructors to apply type
+arguments, dictionaries and to bind dictionaries. Thus, we insert an `HsWrap`
+constructor around the `print` function which instantiates the type variable
+`a` to `()`, passes the dictionary variable and then wraps the function with the evidence.
+
+
+
