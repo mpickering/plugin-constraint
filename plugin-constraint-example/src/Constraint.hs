@@ -8,7 +8,6 @@ import TcRnTypes
 import HsExpr
 import HsBinds
 import HsExtension
-import ConLike
 import TcRnMonad
 import TcEnv
 import Control.Arrow
@@ -145,10 +144,10 @@ mkNewExprTc = do
   -- Generate the evidence for `Show ()` which we will pass to `print`
   (dict_var, showUnitEv) <- generateDictionary
   let
-    rhs = noLoc (HsApp noExt (noLoc $ HsWrap noExt wrapper printExpr) unitExpr)
+    rhs = nlHsApp (mkLHsWrap wrapper printExpr) unitExpr
 
-    printExpr = HsVar noExt (noLoc print_id)
-    unitExpr = noLoc $ HsConLikeOut noExt (RealDataCon unitDataCon)
+    printExpr = nlHsVar print_id
+    unitExpr = nlHsDataCon unitDataCon
 
     -- How we are going to apply the necessary type arguments
     wrapper = mkWpLet showUnitEv <.> mkWpEvVarApps [dict_var] <.> mkWpTyApps [unitTy]
